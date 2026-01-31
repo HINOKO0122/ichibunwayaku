@@ -33,34 +33,45 @@
 
     <script>
        async function processText() {
-            const input = document.getElementById('input').value;
-    const lines = input.split(/\. |\n/);
+    const input = document.getElementById('input').value;
     const output = document.getElementById('output');
-    const gasUrl = "https://script.google.com/macros/s/AKfycbw2qdx3kgbdINH4apn6pdzHohPX3_8RPxFX2212bC1QYrIdadGMWlf18_AK-NiBWRJB/exec"; 
+    const gasUrl = "あなたのGASのURL"; 
 
-    output.innerHTML = '翻訳中...';
-
-    const htmlBuffer = [];
-
-    for (let line of lines) {
-        if (line.trim() === "") continue;
-
-        try {
-            // GASを叩いて翻訳結果を取得
-            const response = await fetch(`${gasUrl}?text=${encodeURIComponent(line)}`);
-            const translated = await response.text();
-
-            htmlBuffer.push(`
-                <div>
-                    <span class="original">${line}.</span>
-                    <span class="translation">${translated}</span>
-                </div>
-            `);
-        } catch (e) {
-            console.error("翻訳エラー:", e);
-        }
+    // すでに保存されているか確認（簡易的な節約機能）
+    const cache = localStorage.getItem(btoa(input).substring(0, 20));
+    if (cache) {
+        output.innerHTML = cache;
+        return;
     }
-    output.innerHTML = htmlBuffer.join('');
+
+    output.innerHTML = '翻訳中...（まとめて翻訳して節約しています）';
+
+    try {
+        // 全文をまとめてGASに送信（通信は1回だけ！）
+        const response = await fetch(`${gasUrl}?text=${encodeURIComponent(input)}`);
+        const fullTranslatedText = await response.text();
+
+        const originalLines = input.split('\n');
+        const translatedLines = fullTranslatedText.split('\n');
+
+        let htmlContent = '';
+        originalLines.forEach((line, i) => {
+            if (line.trim() === "") return;
+            htmlContent += `
+                <div>
+                    <span class="original">${line}</span>
+                    <span class="translation">${translatedLines[i] || ''}</span>
+                </div>
+            `;
+        });
+
+        output.innerHTML = htmlContent;
+        // 結果をブラウザに一時保存
+        localStorage.setItem(btoa(input).substring(0, 20), htmlContent);
+
+    } catch (e) {
+        output.innerHTML = 'エラーが発生しました。';
+    }
 }
 
         const btn = document.getElementById('translateBtn');
