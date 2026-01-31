@@ -35,24 +35,26 @@
        async function processText() {
     const input = document.getElementById('input').value;
     const output = document.getElementById('output');
-    const gasUrl = "https://script.google.com/macros/s/AKfycbymbnL56FMC5S-3FH1oOOWNC4Mj_5gdWcURnj6lJ_J-6MIuW_WTRL4SEdR2Rsa_yAzl/exec"; 
+    const gasUrl = "https://script.google.com/macros/s/AKfycbyKXurqqHdkdB8wNz9wpgnqgEZrrB95UJui1Jh81_lIbCHjCuiaXol09qVs8k-JorG_/exec"; 
 
-    // すでに保存されているか確認（簡易的な節約機能）
-    const cache = localStorage.getItem(btoa(input).substring(0, 20));
+    // キャッシュ確認（節約用）
+    const cacheKey = btoa(encodeURIComponent(input)).substring(0, 30);
+    const cache = localStorage.getItem(cacheKey);
     if (cache) {
         output.innerHTML = cache;
         return;
     }
 
-    output.innerHTML = '翻訳中...（まとめて翻訳して節約しています）';
+    output.innerHTML = '翻訳中...（文ごとに分割しています）';
 
     try {
-        // 全文をまとめてGASに送信（通信は1回だけ！）
         const response = await fetch(`${gasUrl}?text=${encodeURIComponent(input)}`);
-        const fullTranslatedText = await response.text();
+        const resultText = await response.text();
 
-        const originalLines = input.split('\n');
-        const translatedLines = fullTranslatedText.split('\n');
+        // GAS側と同じルールで原文を分割
+        const originalLines = input.split(/(?<=[.!?])\s+/);
+        // GAS側から「|||」区切りで返ってきた和訳を分割
+        const translatedLines = resultText.split('|||');
 
         let htmlContent = '';
         originalLines.forEach((line, i) => {
@@ -60,17 +62,17 @@
             htmlContent += `
                 <div>
                     <span class="original">${line}</span>
-                    <span class="translation">${translatedLines[i] || ''}</span>
+                    <span class="translation">${translatedLines[i] || '（訳がありません）'}</span>
                 </div>
             `;
         });
 
         output.innerHTML = htmlContent;
-        // 結果をブラウザに一時保存
-        localStorage.setItem(btoa(input).substring(0, 20), htmlContent);
+        localStorage.setItem(cacheKey, htmlContent);
 
     } catch (e) {
-        output.innerHTML = 'エラーが発生しました。';
+        output.innerHTML = 'エラーが発生しました。通信環境やGASの設定を確認してください。';
+        console.error(e);
     }
 }
 
