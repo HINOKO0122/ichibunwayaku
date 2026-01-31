@@ -2,40 +2,96 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Line-by-Line Translator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>論文リーダー</title>
     <style>
-        body { font-family: sans-serif; padding-bottom: 100px; }
-        #output div { margin-bottom: 10px; padding: 5px; border-bottom: 1px dotted #ccc; }
-        
-        /* ボタンを押している間の表示切り替え */
-        .translation { display: none; color: blue; }
+        /* 全体のレイアウト調整 */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            padding: 15px; 
+            padding-bottom: 140px; /* ボタンに被らないよう余白を広げる */
+            line-height: 1.8; 
+            background-color: #f8f9fa;
+            color: #2c3e50;
+        }
+
+        /* 入力エリアを使いやすく */
+        textarea { 
+            width: 100%; 
+            font-size: 16px; /* スマホでズームされないための最小サイズ */
+            padding: 12px; 
+            border: 2px solid #ced4da; 
+            border-radius: 12px; 
+            box-sizing: border-box; 
+            margin-bottom: 15px;
+        }
+
+        /* 実行ボタンを大きく */
+        #exec-btn { 
+            width: 100%; 
+            padding: 18px; 
+            font-size: 1.1rem; 
+            background: #28a745; 
+            color: white; 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* 分割されたテキストの表示 */
+        #output div { 
+            margin-bottom: 20px; 
+            padding: 15px; 
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            font-size: 1.1rem; /* 文字を大きく */
+        }
+
+        /* 翻訳の表示切り替え */
+        .translation { display: none; color: #d9534f; font-weight: bold; }
         body.show-translation .original { display: none; }
         body.show-translation .translation { display: block; }
 
-        /* 下部固定ボタン */
+        /* 【重要】下部固定ボタンの大型化 */
         .footer-btn {
-            position: fixed; bottom: 20px; left: 50%;
-            transform: translateX(-50%);
-            padding: 15px 30px; font-size: 1.2rem;
-            background: #007bff; color: white; border: none;
-            border-radius: 50px; cursor: pointer; user-select: none;
+            position: fixed; 
+            bottom: 30px; 
+            left: 5%;
+            width: 90%; /* 画面幅いっぱいに近く */
+            padding: 25px; 
+            font-size: 1.4rem; /* かなり大きく */
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 50px; 
+            font-weight: bold;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            
+            /* スマホ用設定：長押しメニュー防止と連打対応 */
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none; 
         }
+        .footer-btn:active { background: #0056b3; transform: scale(0.98); }
     </style>
 </head>
 <body>
 
-    <textarea id="input" rows="10" style="width:100%" placeholder="英文を貼り付けてください"></textarea>
-    <button onclick="processText()">分割して表示</button>
+    <textarea id="input" rows="6" placeholder="英文をここにペースト"></textarea>
+    <button id="exec-btn" onclick="processText()">英文を分割・翻訳する</button>
 
     <div id="output"></div>
 
-    <button id="translateBtn" class="footer-btn">押している間だけ和訳</button>
+    <div id="translateBtn" class="footer-btn">和訳を表示（長押し）</div>
 
     <script>
-       async function processText() {
+        async function processText() {
     const input = document.getElementById('input').value;
     const output = document.getElementById('output');
-    const gasUrl = "https://script.google.com/macros/s/AKfycbyKXurqqHdkdB8wNz9wpgnqgEZrrB95UJui1Jh81_lIbCHjCuiaXol09qVs8k-JorG_/exec"; 
+    const gasUrl = "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLhsmLZHKaQ09aL-9vq1bfIIPZbtGsNb3oGB45LzBJLGlHGAR6j2N-G2lMKqq5aSbJwPwc9qtEzmfjg15ie-vAhBwwnhTwo_doZYNcp5C5fd_Czrl-MkDNvRAidDdE8oxn9iWOR_mLnUhKOOz3X-5_KZB3aO10z4FwxnUxxavPGc8Fe9LtfXoy8Xm8qBmehNBWb0ybzKf5vmFh4DdlCK89TKtk1QfVjl5kJNa7q7aR81o1IoZDBFlpnf0ZlEFyTA6kjU-6xjZTtmFjdWWxRubel7vZlnkA&lib=MYjc_7nDB_lkZ_ut2XqlgFvYEOMWsfgDR"; 
 
     // キャッシュ確認（節約用）
     const cacheKey = btoa(encodeURIComponent(input)).substring(0, 30);
@@ -75,16 +131,24 @@
         console.error(e);
     }
 }
-
+        // スマホで快適に動くためのイベント制御
         const btn = document.getElementById('translateBtn');
-        // マウス/タッチ操作でクラスを切り替え
-        const toggleOn = () => document.body.classList.add('show-translation');
-        const toggleOff = () => document.body.classList.remove('show-translation');
+        const toggleOn = (e) => {
+            e.preventDefault();
+            document.body.classList.add('show-translation');
+        };
+        const toggleOff = (e) => {
+            e.preventDefault();
+            document.body.classList.remove('show-translation');
+        };
 
+        // タッチイベント（スマホ用）
+        btn.addEventListener('touchstart', toggleOn, {passive: false});
+        btn.addEventListener('touchend', toggleOff, {passive: false});
+        
+        // マウスイベント（PC確認用）
         btn.addEventListener('mousedown', toggleOn);
         btn.addEventListener('mouseup', toggleOff);
-        btn.addEventListener('touchstart', toggleOn);
-        btn.addEventListener('touchend', toggleOff);
     </script>
 </body>
 </html>
