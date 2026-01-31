@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Line-by-Line Translator</title>
+    <style>
+        body { font-family: sans-serif; padding-bottom: 100px; }
+        #output div { margin-bottom: 10px; padding: 5px; border-bottom: 1px dotted #ccc; }
+        
+        /* ボタンを押している間の表示切り替え */
+        .translation { display: none; color: blue; }
+        body.show-translation .original { display: none; }
+        body.show-translation .translation { display: block; }
+
+        /* 下部固定ボタン */
+        .footer-btn {
+            position: fixed; bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px; font-size: 1.2rem;
+            background: #007bff; color: white; border: none;
+            border-radius: 50px; cursor: pointer; user-select: none;
+        }
+    </style>
+</head>
+<body>
+
+    <textarea id="input" rows="10" style="width:100%" placeholder="英文を貼り付けてください"></textarea>
+    <button onclick="processText()">分割して表示</button>
+
+    <div id="output"></div>
+
+    <button id="translateBtn" class="footer-btn">押している間だけ和訳</button>
+
+    <script>
+        function processText() {
+            const input = document.getElementById('input').value;
+            const lines = input.split(/\. |\n/); // ピリオド＋スペース、または改行で分割
+            const output = document.getElementById('output');
+            output.innerHTML = '';
+
+            lines.forEach(line => {
+                if(line.trim() === "") return;
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <span class="original">${line}.</span>
+                    <span class="translation">[ここに翻訳結果を表示]</span>
+                `;
+                output.appendChild(div);
+            });
+        }
+
+        const btn = document.getElementById('translateBtn');
+        // マウス/タッチ操作でクラスを切り替え
+        const toggleOn = () => document.body.classList.add('show-translation');
+        const toggleOff = () => document.body.classList.remove('show-translation');
+
+        btn.addEventListener('mousedown', toggleOn);
+        btn.addEventListener('mouseup', toggleOff);
+        btn.addEventListener('touchstart', toggleOn);
+        btn.addEventListener('touchend', toggleOff);
+    </script>
+</body>
+</html>
