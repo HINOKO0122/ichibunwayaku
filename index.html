@@ -5,79 +5,98 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>論文リーダー</title>
     <style>
-        /* 全体のレイアウト調整 */
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            padding: 15px; 
-            padding-bottom: 140px; /* ボタンに被らないよう余白を広げる */
-            line-height: 1.8; 
-            background-color: #f8f9fa;
-            color: #2c3e50;
-        }
+    /* 全体のレイアウト調整 */
+    body { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+        padding: 15px; 
+        padding-bottom: 140px; 
+        line-height: 1.8; 
+        background-color: #f8f9fa;
+        color: #2c3e50;
+    }
 
-        /* 入力エリアを使いやすく */
-        textarea { 
-            width: 100%; 
-            font-size: 16px; /* スマホでズームされないための最小サイズ */
-            padding: 12px; 
-            border: 2px solid #ced4da; 
-            border-radius: 12px; 
-            box-sizing: border-box; 
-            margin-bottom: 15px;
-        }
+    /* 入力エリア */
+    textarea { 
+        width: 100%; 
+        font-size: 16px; 
+        padding: 12px; 
+        border: 2px solid #ced4da; 
+        border-radius: 12px; 
+        box-sizing: border-box; 
+        margin-bottom: 15px;
+    }
 
-        /* 実行ボタンを大きく */
-        #exec-btn { 
-            width: 100%; 
-            padding: 18px; 
-            font-size: 1.1rem; 
-            background: #28a745; 
-            color: white; 
-            border: none; 
-            border-radius: 12px; 
-            font-weight: bold;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+    /* 実行ボタン */
+    #exec-btn { 
+        width: 100%; 
+        padding: 18px; 
+        font-size: 1.1rem; 
+        background: #28a745; 
+        color: white; 
+        border: none; 
+        border-radius: 12px; 
+        font-weight: bold;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
 
-        /* 分割されたテキストの表示 */
-        #output div { 
-            margin-bottom: 20px; 
-            padding: 15px; 
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            font-size: 1.1rem; /* 文字を大きく */
-        }
+    /* 【修正】分割されたテキストの表示（枠が動かない設定） */
+    #output div { 
+        margin-bottom: 20px; 
+        padding: 15px; 
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        font-size: 1.1rem;
+        
+        /* 英語と日本語を重ねるための設定 */
+        display: grid; 
+        grid-template-areas: "stack";
+        align-items: center;
+    }
 
-        /* 翻訳の表示切り替え */
-        .translation { display: none; color: #d9534f; font-weight: bold; }
-        body.show-translation .original { display: none; }
-        body.show-translation .translation { display: block; }
+    /* 原文と翻訳を同じ場所に配置 */
+    .original, .translation { 
+        grid-area: stack;
+        backface-visibility: hidden; /* チラつき防止 */
+    }
 
-        /* 【重要】下部固定ボタンの大型化 */
-        .footer-btn {
-            position: fixed; 
-            bottom: 30px; 
-            left: 5%;
-            width: 90%; /* 画面幅いっぱいに近く */
-            padding: 25px; 
-            font-size: 1.4rem; /* かなり大きく */
-            background: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 50px; 
-            font-weight: bold;
-            text-align: center;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-            
-            /* スマホ用設定：長押しメニュー防止と連打対応 */
-            user-select: none;
-            -webkit-user-select: none;
-            touch-action: none; 
-        }
-        .footer-btn:active { background: #0056b3; transform: scale(0.98); }
-    </style>
-</head>
+    /* 初期状態：翻訳を透明にする */
+    .translation { 
+        opacity: 0; 
+        color: #d9534f; 
+        font-weight: bold; 
+        pointer-events: none; /* 透明な時は触れないようにする */
+    }
+
+    /* 【修正】ボタン押下時：透明度で切り替える（枠の大きさは維持される） */
+    body.show-translation .original { 
+        opacity: 0; 
+    }
+    body.show-translation .translation { 
+        opacity: 1; 
+    }
+
+    /* 下部固定ボタン */
+    .footer-btn {
+        position: fixed; 
+        bottom: 30px; 
+        left: 5%;
+        width: 90%;
+        padding: 25px; 
+        font-size: 1.4rem; 
+        background: #007bff; 
+        color: white; 
+        border: none; 
+        border-radius: 50px; 
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: none; 
+    }
+    .footer-btn:active { background: #0056b3; transform: scale(0.98); }
+</style>
 <body>
 
     <textarea id="input" rows="6" placeholder="英文をここにペースト"></textarea>
@@ -113,15 +132,15 @@
         const translatedLines = resultText.split('|||');
 
         let htmlContent = '';
-        originalLines.forEach((line, i) => {
-            if (line.trim() === "") return;
-            htmlContent += `
-                <div>
-                    <span class="original">${line}</span>
-                    <span class="translation">${translatedLines[i] || '（訳がありません）'}</span>
-                </div>
-            `;
-        });
+originalLines.forEach((line, i) => {
+    if (line.trim() === "") return;
+    htmlContent += `
+        <div>
+            <span class="original">${line}</span>
+            <span class="translation">${translatedLines[i] || ''}</span>
+        </div>
+    `;
+});
 
         output.innerHTML = htmlContent;
         localStorage.setItem(cacheKey, htmlContent);
