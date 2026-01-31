@@ -34,20 +34,34 @@
     <script>
         function processText() {
             const input = document.getElementById('input').value;
-            const lines = input.split(/\. |\n/); // ピリオド＋スペース、または改行で分割
-            const output = document.getElementById('output');
-            output.innerHTML = '';
+    const lines = input.split(/\. |\n/);
+    const output = document.getElementById('output');
+    const gasUrl = "https://script.google.com/macros/s/AKfycbw2qdx3kgbdINH4apn6pdzHohPX3_8RPxFX2212bC1QYrIdadGMWlf18_AK-NiBWRJB/exec"; 
 
-            lines.forEach(line => {
-                if(line.trim() === "") return;
-                const div = document.createElement('div');
-                div.innerHTML = `
+    output.innerHTML = '翻訳中...';
+
+    const htmlBuffer = [];
+
+    for (let line of lines) {
+        if (line.trim() === "") continue;
+
+        try {
+            // GASを叩いて翻訳結果を取得
+            const response = await fetch(`${gasUrl}?text=${encodeURIComponent(line)}`);
+            const translated = await response.text();
+
+            htmlBuffer.push(`
+                <div>
                     <span class="original">${line}.</span>
-                    <span class="translation">[ここに翻訳結果を表示]</span>
-                `;
-                output.appendChild(div);
-            });
+                    <span class="translation">${translated}</span>
+                </div>
+            `);
+        } catch (e) {
+            console.error("翻訳エラー:", e);
         }
+    }
+    output.innerHTML = htmlBuffer.join('');
+}
 
         const btn = document.getElementById('translateBtn');
         // マウス/タッチ操作でクラスを切り替え
